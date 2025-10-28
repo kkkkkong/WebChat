@@ -43,7 +43,9 @@
     "web_accessible_resources": [
         {
             "resources": [
-                "lib/marked.min.js"
+                "lib/marked.min.js",
+                "icons/*.png",
+                "icons/*.gif"
             ],
             "matches": [
                 "<all_urls>"

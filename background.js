@@ -39,7 +39,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 return true;
             }
         }
-
         sendResponse({
             history: history,
             isGenerating: state.isGenerating,
@@ -178,24 +177,25 @@ async function handleAnswerGeneration(port, tabId, pageContent, question) {
 
         // 获取最新的设置，确保获取到最新的系统提示词
         const settings = await chrome.storage.sync.get({
-            apiType: 'custom',
+            apiType: 'lmpcloud',
             maxTokens: 2048,
             temperature: 0.7,
-            enableContext: true,
+            enableContext: false,
             systemPrompt: '你是一个帮助理解网页内容的AI助手。请使用Markdown格式回复。',
-            custom_apiKey: '',
-            custom_apiBase: 'https://api.openai.com/v1/chat/completions',
-            custom_model: 'gpt-3.5-turbo',
-            ollama_apiKey: '',
-            ollama_apiBase: 'http://127.0.0.1:11434/api/chat',
-            ollama_model: 'qwen2.5'
+            lmpcloud_apiKey:'test',
+            lmpcloud_apiBase:'asdfasd',
+            agentId:"test",
+            sessionId:"test"
+
         });
+        console.log("setting ",settings)
 
         // 获取当前API类型的配置
-        const apiKey = settings[`${settings.apiType}_apiKey`];
-        const apiBase = settings[`${settings.apiType}_apiBase`];
-        const model = settings[`${settings.apiType}_model`];
 
+        const model = settings[`${settings.apiType}_model`];
+        console.log("question",question)
+        const apiKey = settings.lmpcloud_apiKey;
+        const apiBase = settings.lmpcloud_apiBase;
         // 构建消息历史，使用最新的系统提示词
         let messages = [
             {
@@ -225,26 +225,17 @@ async function handleAnswerGeneration(port, tabId, pageContent, question) {
 
         // 构建请求体
         let requestBody;
-        if (settings.apiType === 'ollama') {
+        if (settings.apiType === 'lmpcloud') {
             requestBody = {
-                model: model,
-                messages: messages,
-                stream: true,
-                options: {
-                    temperature: settings.temperature,
-                    num_predict: settings.maxTokens
-                }
-            };
-        } else {
-            requestBody = {
-                model: model,
-                messages: messages,
-                max_tokens: settings.maxTokens,
-                temperature: settings.temperature,
-                stream: true
+                agentId: settings.agentId,
+                agentVersion: "",
+                files: [],
+                sessionId: settings.sessionId,
+                stream: false,
+                text: question,
+                metadata: {}
             };
         }
-
         let fullAnswer = ''; // 用于累积完整的答案
 
         // 构建请求头
@@ -252,9 +243,9 @@ async function handleAnswerGeneration(port, tabId, pageContent, question) {
             'Content-Type': 'application/json'
         };
 
-        // 如果是自定义API，添加Authorization头
-        if (settings.apiType === 'custom') {
-            headers['Authorization'] = `Bearer ${apiKey}`;
+        // 根据API类型添加Authorization头
+        if (settings.apiType === 'lmpcloud') {
+            headers['Authorization'] = apiKey;
         }
 
         const response = await fetch(apiBase, {
@@ -307,8 +298,10 @@ async function handleAnswerGeneration(port, tabId, pageContent, question) {
                 for (const line of lines) {
                     if (!line.trim()) continue;
 
-                    if (line.startsWith('data: ')) {
-                        const data = line.slice(5).trim();
+                    // if (line.startsWith('data: ')) {
+                    if (true) {
+                        // const data = line.slice(5).trim();
+                        const data = line.trim();
 
                         if (data === '[DONE]') {
                             continue;
@@ -320,6 +313,15 @@ async function handleAnswerGeneration(port, tabId, pageContent, question) {
 
                             if (settings.apiType === 'ollama') {
                                 content = parsed.message?.content || '';
+                            } else if (settings.apiType === 'lmpcloud') {
+                                // 处理LMP Cloud API的响应格式
+                                if (parsed.code === "000000" && parsed.success && parsed.data?.answer) {
+                                    content = parsed.data.answer;
+                                    // 检查是否结束
+                                    if (parsed.data.isEnd) {
+                                        // 如果已结束，可以在这里处理
+                                    }
+                                }
                             } else {
                                 content = parsed.choices?.[0]?.delta?.content || '';
                             }
@@ -418,4 +420,4 @@ chrome.tabs.onRemoved.addListener((tabId) => {
     delete currentAnswers[tabId];
     delete activePorts[tabId];
     delete completedAnswers[tabId];
-}); 
+});

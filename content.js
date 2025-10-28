@@ -267,11 +267,8 @@ function createFloatingBall() {
     // 创建悬浮球
     const ball = document.createElement('div');
     ball.id = 'ai-assistant-ball';
-    ball.innerHTML = `<svg t="1731757557572" class="icon" width="32" height="32" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1317" width="128" height="128">
-        <path d="M200 935.744a39.517867 39.517867 0 0 1-14.122667-7.185067c-12.906667-10.295467-18.602667-27.2896-14.741333-43.4688a1295.863467 1295.863467 0 0 0 17.207467-520c-5.6448-33.216 0.418133-66.760533 17.5488-96.443733 17.156267-29.563733 43.498667-51.648 75.656533-60.497067h0.008533l417.591467-114.24c66.0352-19.434667 144.533333 49.792 162.602667 156.258134a1978.666667 1978.666667 0 0 1 27.144533 397.806933c-3.4432 107.592533-71.6928 186.248533-139.758933 176.008533l-64.823467-8.494933c-22.203733-3.042133-36.8768-29.952-33.8944-60.1984 3.008-30.2336 22.664533-53.713067 45.038933-52.343467 21.7472 1.463467 43.485867 2.922667 65.233067 4.3776 24.170667 1.783467 45.969067-26.0096 47.133867-62.007466a1897.941333 1897.941333 0 0 0-26.030934-381.499734c-6.062933-35.618133-31.466667-60.3136-55.168-55.2576l-424.0128 87.466667c-11.4176 2.363733-21.1584 9.570133-27.6096 20.078933-6.4512 10.530133-8.802133 22.993067-6.698666 35.345067a1377.0368 1377.0368 0 0 1 2.346666 449.117867 1341.696 1341.696 0 0 0 118.4512-104.448c8.251733-8.1792 18.862933-12.475733 29.602134-11.758934l293.009066 19.6736c22.340267 1.365333 38.839467 28.650667 35.639467 60.842667-3.1744 32.200533-24.704 55.765333-46.882133 52.7232l-274.5216-35.972267c-62.229333 57.1136-127.6544 106.965333-194.973867 149.384534-9.629867 6.071467-20.8 7.522133-30.976 4.731733z" p-id="1318" fill="white"></path>
-        <path d="M635.733333 488.533333m-59.733333 0a59.733333 59.733333 0 1 0 119.466667 0 59.733333 59.733333 0 1 0-119.466667 0Z" p-id="1319" fill="white"></path>
-        <path d="M460.864 507.733333m-50.133333 0a50.133333 50.133333 0 1 0 100.266666 0 50.133333 50.133333 0 1 0-100.266666 0Z" p-id="1320" fill="white"></path>
-    </svg>`;
+    const iconUrl = chrome.runtime.getURL('icons/ball-icon.gif');
+    ball.innerHTML = `<img src="${iconUrl}" width="100" height="100" alt="AI Assistant">`;
 
     // 创建设置按钮
     const settingsButton = document.createElement('div');
@@ -357,103 +354,130 @@ function createFloatingBall() {
     container.appendChild(ball);
     container.appendChild(settingsButton);
 
-    // 修改拖拽功能
+    // 重新实现拖拽功能
     let isDragging = false;
     let currentX;
     let currentY;
     let initialX;
     let initialY;
-
-    ball.addEventListener('mousedown', (e) => {
+    
+    // 定义事件处理函数
+    function handleMouseDown(e) {
         isDragging = true;
         const rect = container.getBoundingClientRect();
         initialX = e.clientX - rect.left;
         initialY = e.clientY - rect.top;
-    });
+        
+        // 添加移动和释放事件监听器
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+        
+        // 防止文本选择
+        e.preventDefault();
+    }
+    
+    function handleMouseMove(e) {
+        if (!isDragging) return;
+        
+        e.preventDefault();
+        currentX = e.clientX - initialX;
+        currentY = e.clientY - initialY;
 
-    document.addEventListener('mousemove', (e) => {
-        if (isDragging) {
-            e.preventDefault();
-            currentX = e.clientX - initialX;
-            currentY = e.clientY - initialY;
+        // 确保不会超出屏幕边界
+        const maxX = window.innerWidth - container.offsetWidth;
+        const maxY = window.innerHeight - container.offsetHeight;
+        const edgeThreshold = ball.offsetWidth / 2;
 
-            // 确保不会超出屏幕边界
-            const maxX = window.innerWidth - container.offsetWidth;
-            const maxY = window.innerHeight - container.offsetHeight;
-            const edgeThreshold = ball.offsetWidth / 2;
+        // 移除所有边缘类
+        ball.classList.remove('edge-left', 'edge-right', 'edge-top', 'edge-bottom');
 
-            // 移除所有边缘类
-            ball.classList.remove('edge-left', 'edge-right', 'edge-top', 'edge-bottom');
-
-            // 检查是否靠近边缘并添加相应的类
-            let position = {};
-            if (currentX <= edgeThreshold) {
-                currentX = 0;
-                ball.classList.add('edge-left');
-                position = {
-                    left: '0px',
-                    top: `${currentY}px`,
-                    right: 'auto',
-                    bottom: 'auto',
-                    edge: 'left'
-                };
-            } else if (currentX >= maxX - edgeThreshold) {
-                currentX = maxX;
-                ball.classList.add('edge-right');
-                position = {
-                    right: '0px',
-                    top: `${currentY}px`,
-                    left: 'auto',
-                    bottom: 'auto',
-                    edge: 'right'
-                };
-            } else if (currentY <= edgeThreshold) {
-                currentY = 0;
-                ball.classList.add('edge-top');
-                position = {
-                    top: '0px',
-                    left: `${currentX}px`,
-                    right: 'auto',
-                    bottom: 'auto',
-                    edge: 'top'
-                };
-            } else if (currentY >= maxY - edgeThreshold) {
-                currentY = maxY;
-                ball.classList.add('edge-bottom');
-                position = {
-                    bottom: '0px',
-                    left: `${currentX}px`,
-                    right: 'auto',
-                    top: 'auto',
-                    edge: 'bottom'
-                };
-            } else {
-                position = {
-                    left: `${currentX}px`,
-                    top: `${currentY}px`,
-                    right: 'auto',
-                    bottom: 'auto',
-                    edge: null
-                };
-            }
-
-            // 应用位置到容器
-            Object.assign(container.style, position);
-
-            // 保存位置和边缘状态到存储
-            chrome.storage.sync.set({
-                ballPosition: position
-            });
+        // 检查是否靠近边缘并添加相应的类
+        let position = {};
+        if (currentX <= edgeThreshold) {
+            currentX = 0;
+            ball.classList.add('edge-left');
+            position = {
+                left: '0px',
+                top: `${currentY}px`,
+                right: 'auto',
+                bottom: 'auto',
+                edge: 'left'
+            };
+        } else if (currentX >= maxX - edgeThreshold) {
+            currentX = maxX;
+            ball.classList.add('edge-right');
+            position = {
+                right: '0px',
+                top: `${currentY}px`,
+                left: 'auto',
+                bottom: 'auto',
+                edge: 'right'
+            };
+        } else if (currentY <= edgeThreshold) {
+            currentY = 0;
+            ball.classList.add('edge-top');
+            position = {
+                top: '0px',
+                left: `${currentX}px`,
+                right: 'auto',
+                bottom: 'auto',
+                edge: 'top'
+            };
+        } else if (currentY >= maxY - edgeThreshold) {
+            currentY = maxY;
+            ball.classList.add('edge-bottom');
+            position = {
+                bottom: '0px',
+                left: `${currentX}px`,
+                right: 'auto',
+                top: 'auto',
+                edge: 'bottom'
+            };
+        } else {
+            position = {
+                left: `${currentX}px`,
+                top: `${currentY}px`,
+                right: 'auto',
+                bottom: 'auto',
+                edge: null
+            };
         }
-    });
 
-    document.addEventListener('mouseup', () => {
+        // 应用位置到容器
+        Object.assign(container.style, position);
+
+        // 保存位置和边缘状态到存储
+        chrome.storage.sync.set({
+            ballPosition: position
+        });
+    }
+    
+    function handleMouseUp(e) {
+        // 移除事件监听器
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+        
+        // 重置拖拽状态
         isDragging = false;
+        console.log('拖拽结束');
+    }
+    
+    // 添加鼠标按下事件监听器
+    ball.addEventListener('mousedown', handleMouseDown);
+    
+    // 添加额外的保障措施
+    window.addEventListener('blur', () => {
+        if (isDragging) {
+            isDragging = false;
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+            console.log('窗口失去焦点，拖拽结束');
+        }
     });
 
     // 从存储中加载位置，并确保位置在可视区域内
     chrome.storage.sync.get({
-        ballPosition: { right: '20px', bottom: '20px', left: 'auto', top: 'auto', edge: null }
+        ballPosition: { right: 'auto', bottom: 'auto', left: '20px', top: '20px', edge: null }
     }, (items) => {
         // 获取容器和窗口尺寸
         const containerRect = container.getBoundingClientRect();
@@ -1267,4 +1291,4 @@ window.addEventListener('error', (event) => {
             notification.remove();
         }, 3000);
     }
-}); 
+});

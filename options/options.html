@@ -46,6 +46,7 @@
                 <select id="apiType">
                     <option value="custom">自定义API</option>
                     <option value="ollama">本地模型(Ollama)</option>
+                    <option value="lmpcloud">LMP Cloud API</option>
                 </select>
             </div>
 
@@ -77,6 +78,19 @@
                     <label for="model">AI模型: <span class="required-mark">*</span></label>
                     <input type="text" id="model" placeholder="">
                     <small class="help-text" id="modelHelp">模型名称</small>
+                </div>
+                
+                <!-- LMP Cloud API 特有字段 -->
+                <div class="form-group lmpcloud-field" style="display: none;">
+                    <label for="lmpcloud_agentId">Agent ID: <span class="required-mark">*</span></label>
+                    <input type="text" id="lmpcloud_agentId" placeholder="请输入Agent ID">
+                    <small class="help-text">LMP Cloud API的Agent ID</small>
+                </div>
+                
+                <div class="form-group lmpcloud-field" style="display: none;">
+                    <label for="lmpcloud_sessionId">Session ID:</label>
+                    <input type="text" id="lmpcloud_sessionId" placeholder="可选，留空将自动生成">
+                    <small class="help-text">LMP Cloud API的Session ID，留空将自动生成</small>
                 </div>
             </div>
             <div class="form-group">

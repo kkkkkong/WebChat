@@ -1,81 +1,44 @@
 // API类型的默认配置
 const API_CONFIGS = {
-    custom: {
-        apiBase: 'https://api.openai.com/v1/chat/completions',
-        modelPlaceholder: 'gpt-3.5-turbo',
+    lmpcloud: {
+        apiCreate: 'http://26.73.2.47:19000/lmp-cloud-ias-server/api/session/create',
+        apiBase: 'http://26.73.2.47:19000/lmp-cloud-ias-server/api/session/run',
+        modelPlaceholder: 'lmpcloud',
         requiresKey: true,
-        apiBasePlaceholder: 'https://api.openai.com/v1/chat/completions',
-        apiKeyPlaceholder: '请输入API密钥',
-        modelHelp: '例如：gpt-3.5-turbo、gpt-4等'
-    },
-    ollama: {
-        apiBase: 'http://127.0.0.1:11434/api/chat',
-        modelPlaceholder: 'qwen2.5',
-        requiresKey: false,
-        apiBasePlaceholder: 'http://127.0.0.1:11434/api/chat',
-        apiKeyPlaceholder: '本地模型无需API密钥',
-        modelHelp: '常用模型：qwen2.5, llama2, mistral, gemma, codellama等。使用前请确保已安装模型：ollama pull qwen2.5'
+        apiBasePlaceholder: 'http://26.73.2.47:19000/lmp-cloud-ias-server/api/session/run',
+        apiKeyPlaceholder: '输入您的Authorization值',
+        apiKey: '1cf0579b498c4a6db46a939ef5eeb72f',
+        modelHelp: 'LMP Cloud API模型ID',
+        agentId:"eb2b0d6e-e4b5-437b-98a8-3fd3dcae5386",
+        agentVersion:"",
+        sessionId:"7987fda1-5f6e-4105-a53d-2531fb95c706"
     }
 };
-
-// 测试API配置
-async function testApiConfig(settings) {
+async function createApiConfig(settings) {
     try {
         // 设置基础headers
         let headers = {
             'Content-Type': 'application/json'
         };
-
-        // 如果是自定义API，添加Authorization头
-        if (settings.apiType === 'custom') {
+        if (settings.apiType === 'lmpcloud') {
             if (!settings.apiKey) {
-                throw new Error('API密钥是必填项');
+                throw new Error('Authorization密钥是必填项');
             }
-            headers['Authorization'] = `Bearer ${settings.apiKey}`;
+            headers['Authorization'] = settings.apiKey;
         }
 
         let requestBody;
-        if (settings.apiType === 'ollama') {
-            // Ollama API 格式
+        if (settings.apiType === 'lmpcloud') {
             requestBody = {
-                model: settings.model,
-                messages: [
-                    {
-                        role: "system",
-                        content: "你是一个帮助理解网页内容的AI助手。"
-                    },
-                    {
-                        role: "user",
-                        content: "这是一条测试消息，请回复：API配置测试成功"
-                    }
-                ],
-                stream: false,
-                options: {
-                    temperature: settings.temperature || 0.7,
-                    num_predict: 50
-                }
-            };
-        } else {
-            // OpenAI API 格式
-            requestBody = {
-                model: settings.model,
-                messages: [
-                    {
-                        role: "system",
-                        content: "你是一个帮助理解网页内容的AI助手。"
-                    },
-                    {
-                        role: "user",
-                        content: "这是一条测试消息，请回复：API配置测试成功"
-                    }
-                ],
-                max_tokens: 50,
-                temperature: 0.7,
-                stream: false
+                agentId: settings.agentId,
+                agentVersion: ""
             };
         }
+        console.log("settings",settings)
+        console.log("settings.apiCreate",settings.apiCreate)
+        console.log("settings.agentId",settings.agentId)
 
-        const response = await fetch(settings.apiBase, {
+        const response = await fetch(settings.apiCreate, {
             method: 'POST',
             headers: headers,
             body: JSON.stringify(requestBody)
@@ -87,18 +50,6 @@ async function testApiConfig(settings) {
                 const errorJson = JSON.parse(errorText);
                 throw new Error(errorJson.error?.message || '请求失败');
             } catch (e) {
-                if (settings.apiType === 'ollama') {
-                    throw new Error(
-                        `无法连接到Ollama服务。请检查：\n` +
-                        `1. Ollama是否已正确安装\n` +
-                        `2. 服务是否已启动：\n` +
-                        `   OLLAMA_ORIGINS=* ollama serve\n` +
-                        `3. 服务地址是否正确(默认：http://127.0.0.1:11434)\n` +
-                        `4. 是否允许跨域请求(OLLAMA_ORIGINS=*)\n` +
-                        `5. 是否已安装所需的模型：ollama pull ${settings.model}\n` +
-                        `6. 如果问题持续，可以尝试重启Ollama服务`
-                    );
-                }
                 throw new Error(`请求失败: ${errorText}`);
             }
         }
@@ -106,35 +57,109 @@ async function testApiConfig(settings) {
         const data = await response.json();
 
         // 根据不同的API类型验证响应
-        if (settings.apiType === 'ollama') {
-            if (data.error) {
-                throw new Error(data.error);
+        if (settings.apiType === 'lmpcloud') {
+            // LMP Cloud API 响应验证
+            console.log('LMP Cloud API响应:', data);
+            // 验证LMP Cloud API响应格式
+            if (!data || data.code !== "000000" || !data.success) {
+                throw new Error(data.message || '无效的API响应格式');
             }
-            // Ollama API 响应验证
-            if (!data.message || !data.message.content) {
-                throw new Error('无效的API响应格式');
+            // 验证data字段
+            if (!data.data) {
+                throw new Error('API响应缺少必要的数据字段');
             }
-        } else {
-            // OpenAI API 响应验证
-            if (!data.choices || !data.choices[0].message) {
-                throw new Error('无效的API响应格式');
+            // data.code 为400001时， 抛出message
+            if (data.code === '400001') {
+                throw new Error(data.message || '创建会话失败');
             }
         }
+        // 提取sessionId
+        if (settings.apiType === 'lmpcloud') {
+            settings.sessionId = data.data.sessionId;
+            // 保存设置
+            showStatus('✅会话已创建');
+            await chrome.storage.sync.set(settings);
+            document.getElementById('lmpcloud_sessionId').value=settings.sessionId
+            console.log('重新创建后的 settings', settings);
 
+        }
         return true;
     } catch (error) {
-        if (error.message.includes('Failed to fetch') && settings.apiType === 'ollama') {
-            throw new Error(
-                `无法连接到Ollama服务。请检查：\n` +
-                `1. Ollama是否已正确安装\n` +
-                `2. 服务是否已启动：\n` +
-                `   OLLAMA_ORIGINS=* ollama serve\n` +
-                `3. 服务地址是否正确(默认：http://127.0.0.1:11434)\n` +
-                `4. 是否允许跨域请求(OLLAMA_ORIGINS=*)\n` +
-                `5. 是否已安装所需的模型：ollama pull ${settings.model}\n` +
-                `6. 如果问题持续，可以尝试重启Ollama服务`
-            );
+        throw new Error(`API创建失败: ${error.message}`);
+    }
+
+}
+// 测试API配置
+async function testApiConfig(settings) {
+    try {
+        // 设置基础headers
+        let headers = {
+            'Content-Type': 'application/json'
+        };
+        if (settings.apiType === 'lmpcloud') {
+            if (!settings.apiKey) {
+                throw new Error('Authorization密钥是必填项');
+            }
+            headers['Authorization'] = settings.apiKey;
         }
+
+        let requestBody;
+        if (settings.apiType === 'lmpcloud') {
+            requestBody = {
+                agentId: settings.agentId,
+                agentVersion: "",
+                files: [],
+                sessionId: settings.sessionId,
+                stream: false,
+                text: "你是谁？",
+                metadata: {}
+            };
+        }
+        console.log("requestBody",requestBody)
+
+        const response = await fetch(settings.apiBase, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(requestBody)
+        });
+//        返回内容正常
+        if (response.ok){
+            const data = await response.json();
+            // 根据不同的API类型验证响应
+            if (settings.apiType === 'lmpcloud') {
+                // LMP Cloud API 响应验证
+                console.log('LMP Cloud API响应:', data);
+                // 验证LMP Cloud API响应格式
+                if (!data || data.code !== "000000" || !data.success) {
+                    throw new Error(data.message || '无效的API响应格式');
+                }
+                // 验证data字段
+                if (!data.data || !data.data.answer) {
+                    throw new Error('API响应缺少必要的数据字段');
+                }
+            }
+//            保存配置
+            await chrome.storage.sync.set(settings);
+            return true;
+        }
+//        返回不ok的情况，判断是否新建
+        const errorText = await response.text();
+        const errorData = JSON.parse(errorText);
+        // 如果data.code为400001，创建会话
+        if (errorData.code === '400001') {
+            showStatus('会话失效，正在创建新会话...');
+            await createApiConfig(settings);
+        }
+        else
+        {
+            try {
+                const errorJson = JSON.parse(errorText);
+                throw new Error(errorJson.error?.message || '请求失败');
+            } catch (e) {
+                throw new Error(`请求失败: ${errorText}`);
+            }
+        }
+    } catch (error) {
         throw new Error(`API测试失败: ${error.message}`);
     }
 }
@@ -146,12 +171,22 @@ function updateApiTypeUI(apiType) {
     const apiBaseInput = document.getElementById('apiBase');
     const modelInput = document.getElementById('model');
     const apiKeyInput = document.getElementById('apiKey');
+    const lmpcloudFields = document.querySelectorAll('.lmpcloud-field');
+
+
+    // 显示或隐藏LMP Cloud特有字段
+    lmpcloudFields.forEach(field => {
+        field.style.display = apiType === 'lmpcloud' ? 'block' : 'none';
+    });
 
     // 从存储中加载当前API类型的配置
     chrome.storage.sync.get({
         [`${apiType}_apiKey`]: '',
         [`${apiType}_apiBase`]: config.apiBase,
         [`${apiType}_model`]: config.modelPlaceholder,
+        'lmpcloud_agentId': config.agentId,
+        'lmpcloud_sessionId': config.sessionId,
+        'apiKey': config.apiKey
     }, (items) => {
         // 更新API密钥输入框
         apiKeyGroup.style.display = config.requiresKey ? 'block' : 'none';
@@ -162,6 +197,13 @@ function updateApiTypeUI(apiType) {
         apiBaseInput.value = items[`${apiType}_apiBase`];
         apiBaseInput.placeholder = config.apiBasePlaceholder;
         document.getElementById('apiBaseHelp').textContent = `${apiType === 'ollama' ? '本地' : ''} API接口地址`;
+        
+        // 更新LMP Cloud特有字段
+        if (apiType === 'lmpcloud') {
+            document.getElementById('lmpcloud_agentId').value = items.lmpcloud_agentId;
+            document.getElementById('lmpcloud_sessionId').value = items.lmpcloud_sessionId;
+            document.getElementById('apiKey').value = items.apiKey;
+        }
 
         // 更新模型输入框
         modelInput.value = items[`${apiType}_model`];
@@ -192,11 +234,6 @@ function showStatus(message, type = 'success') {
 function validateSettings(settings) {
     const config = API_CONFIGS[settings.apiType];
 
-    // 如果是默认的自定义API设置，允许API密钥为空
-    const isDefaultCustomSettings =
-        settings.apiType === 'custom' &&
-        settings.apiBase === DEFAULT_SETTINGS.custom_apiBase &&
-        settings.model === DEFAULT_SETTINGS.custom_model;
 
     if (!settings.apiBase.trim()) {
         throw new Error('请求URL是必填项');
@@ -266,10 +303,18 @@ async function saveOptions() {
         maxTokens: parseInt(document.getElementById('maxTokensInput').value),
         temperature: parseFloat(document.getElementById('temperatureInput').value),
         // 存储当前API类型的配置
-        [`${apiType}_apiKey`]: document.getElementById('apiKey').value.trim(),
+        [`${apiType}_apiKey`]: document.getElementById('apiKey').value.trim(), 
+        [`${apiType}_apiCreate`]: 'http://26.73.2.47:19000/lmp-cloud-ias-server/api/session/create',
         [`${apiType}_apiBase`]: document.getElementById('apiBase').value.trim() || API_CONFIGS[apiType].apiBase,
         [`${apiType}_model`]: document.getElementById('model').value.trim()
     };
+    console.log("settings",settings)
+    // 如果是LMP Cloud API，保存特有字段
+    if (apiType === 'lmpcloud') {
+        settings.lmpcloud_agentId = document.getElementById('lmpcloud_agentId').value.trim();
+        settings.lmpcloud_sessionId = document.getElementById('lmpcloud_sessionId').value.trim();
+    }
+    console.log("settings",settings)
 
     // 添加当前活动的配置到settings中
     settings.activeConfig = {
@@ -289,15 +334,22 @@ async function saveOptions() {
 
         // 显示测试中状态
         showStatus('正在测试API配置...');
+        console.log("settings",settings)
 
         // 测试API配置
         await testApiConfig({
             apiType,
             apiKey: settings[`${apiType}_apiKey`],
             apiBase: settings[`${apiType}_apiBase`],
-            model: settings[`${apiType}_model`]
+            model: settings[`${apiType}_model`],
+            agentId : settings[`${apiType}_agentId`],
+            sessionId : settings[`${apiType}_sessionId`],
+            apiCreate : settings[`${apiType}_apiCreate`]
         });
-
+        console.log("save settings",settings)
+        const temp_sessionId = await chrome.storage.sync.get("sessionId")
+        settings.lmpcloud_sessionId = temp_sessionId.sessionId
+        console.log("save settings",settings)
         // 保存设置
         await chrome.storage.sync.set(settings);
 
@@ -312,17 +364,13 @@ async function saveOptions() {
 // 从Chrome存储加载设置
 function loadOptions() {
     chrome.storage.sync.get({
-        apiType: 'custom',
+        apiType: 'lmpcloud',
         maxTokens: 2048,
         temperature: 0.7,
-        // 自定义API的默认配置
-        custom_apiKey: '',
-        custom_apiBase: API_CONFIGS.custom.apiBase,
-        custom_model: API_CONFIGS.custom.modelPlaceholder,
-        // ollama的默认配置
-        ollama_apiKey: '',
-        ollama_apiBase: API_CONFIGS.ollama.apiBase,
-        ollama_model: API_CONFIGS.ollama.modelPlaceholder
+        enableContext: false,
+        systemPrompt: '你是一个帮助理解网页内容的AI助手。请使用Markdown格式回复。',
+        lmpcloud_apiKey:'test',
+        lmpcloud_apiBase:'asdfasd'
     }, (items) => {
         document.getElementById('apiType').value = items.apiType;
 
@@ -341,15 +389,15 @@ function loadOptions() {
 
 // 在现有代码中添加默认设置常量
 const DEFAULT_SETTINGS = {
-    apiType: 'custom',
+    apiType: 'lmpcloud',
     maxTokens: 2048,
     temperature: 0.7,
-    custom_apiKey: '',
-    custom_apiBase: 'https://api.openai.com/v1/chat/completions',
-    custom_model: 'gpt-3.5-turbo',
-    ollama_apiKey: 'ollama',
-    ollama_apiBase: 'http://127.0.0.1:11434/api/chat',
-    ollama_model: 'llama2'
+    lmpcloud_apiKey: '1cf0579b498c4a6db46a939ef5eeb72f',
+    lmpcloud_apiBase: 'http://26.73.2.47:19000/lmp-cloud-ias-server/api/session/run',
+    lmpcloud_model: 'lmpcloud',
+    lmpcloud_agentId:"eb2b0d6e-e4b5-437b-98a8-3fd3dcae5386",
+    lmpcloud_sessionId:"7987fda1-5f6e-4105-a53d-2531fb95c706"
+
 };
 
 // 修改还原设置函数
@@ -360,17 +408,17 @@ async function resetOptions() {
             ...DEFAULT_SETTINGS,
             // 添加activeConfig
             activeConfig: {
-                apiKey: DEFAULT_SETTINGS.custom_apiKey,
-                apiBase: DEFAULT_SETTINGS.custom_apiBase,
-                model: DEFAULT_SETTINGS.custom_model
+                apiKey: DEFAULT_SETTINGS.lmpcloud_apiKey,
+                apiBase: DEFAULT_SETTINGS.lmpcloud_apiBase,
+                model: DEFAULT_SETTINGS.lmpcloud_model
             }
         });
 
         // 更新UI显示
         document.getElementById('apiType').value = DEFAULT_SETTINGS.apiType;
-        document.getElementById('apiKey').value = DEFAULT_SETTINGS.custom_apiKey;
-        document.getElementById('apiBase').value = DEFAULT_SETTINGS.custom_apiBase;
-        document.getElementById('model').value = DEFAULT_SETTINGS.custom_model;
+        document.getElementById('apiKey').value = DEFAULT_SETTINGS.lmpcloud_apiKey;
+        document.getElementById('apiBase').value = DEFAULT_SETTINGS.lmpcloud_apiBase;
+        document.getElementById('model').value = DEFAULT_SETTINGS.lmpcloud_model;
         updateMaxTokensDisplay(DEFAULT_SETTINGS.maxTokens);
         updateTemperatureDisplay(DEFAULT_SETTINGS.temperature);
 
@@ -380,20 +428,27 @@ async function resetOptions() {
         const modelInput = document.getElementById('model');
 
         // 设置输入框的值和占位符
-        apiKeyInput.value = DEFAULT_SETTINGS.custom_apiKey;
-        apiKeyInput.placeholder = API_CONFIGS.custom.apiKeyPlaceholder;
+        apiKeyInput.value = DEFAULT_SETTINGS.lmpcloud_apiKey;
+        apiKeyInput.placeholder = API_CONFIGS.lmpcloud.apiKeyPlaceholder;
 
-        apiBaseInput.value = DEFAULT_SETTINGS.custom_apiBase;
-        apiBaseInput.placeholder = API_CONFIGS.custom.apiBasePlaceholder;
+        apiBaseInput.value = DEFAULT_SETTINGS.lmpcloud_apiBase;
+        apiBaseInput.placeholder = API_CONFIGS.lmpcloud.apiBasePlaceholder;
 
-        modelInput.value = DEFAULT_SETTINGS.custom_model;
-        modelInput.placeholder = API_CONFIGS.custom.modelPlaceholder;
+        modelInput.value = DEFAULT_SETTINGS.lmpcloud_model;
+        modelInput.placeholder = API_CONFIGS.lmpcloud.modelPlaceholder;
+
+        // 更新LMP Cloud特有字段
+        document.getElementById('lmpcloud_agentId').value = DEFAULT_SETTINGS.lmpcloud_agentId;
+        document.getElementById('lmpcloud_sessionId').value = DEFAULT_SETTINGS.lmpcloud_sessionId;
+        document.getElementById('apiKey').value = DEFAULT_SETTINGS.lmpcloud_apiKey;
+        console.log(DEFAULT_SETTINGS.lmpcloud_agentId)
+        console.log(document.getElementById('lmpcloud_agentId').value)
 
         // 更新帮助文本
         document.getElementById('apiBaseHelp').textContent = 'API接口地址';
-        document.getElementById('modelHelp').textContent = API_CONFIGS.custom.modelHelp;
+        document.getElementById('modelHelp').textContent = API_CONFIGS.lmpcloud.modelHelp;
 
-        // 确保API密钥输入组可见（因为默认是custom类型）
+        // 确保API密钥输入组可见（因为默认是lmpcloud类型）
         document.querySelector('.api-key-group').style.display = 'block';
 
         // 示成功提示
@@ -584,4 +639,4 @@ document.addEventListener('DOMContentLoaded', async () => {
     autoHideDialog.addEventListener('change', () => {
         debounceSave(autoHideDialog.checked);
     });
-}); 
+});
