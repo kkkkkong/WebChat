@@ -623,11 +623,11 @@
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* 当容器被hover时显示设置按钮 */
+/* 设置按钮已移至对话框内，隐藏悬浮球旁的设置按钮 */
 .ball-container:hover .settings-button {
-    opacity: 1;
-    pointer-events: auto;
-    transform: translateX(-50%) scale(1);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(-50%) scale(0.8);
 }
 
 /* 设置按钮hover效果 */
@@ -635,41 +635,19 @@
     background-color: #0056b3;
 }
 
-/* 当悬浮球在底部边缘时，设置按钮显示在上方 */
-.ball-container:has(#ai-assistant-ball.edge-bottom) .settings-button {
-    top: auto;
-    bottom: 100%;
-    margin-top: 0;
-    margin-bottom: 8px;
-}
-
-/* 当悬浮球在顶部边缘时，设置按钮显示在下方 */
-.ball-container:has(#ai-assistant-ball.edge-top) .settings-button {
-    top: 100%;
-    bottom: auto;
-    margin-bottom: 0;
-    margin-top: 8px;
-}
-
-/* 当悬浮球在左边缘时，设置按钮显示在下方 */
-.ball-container:has(#ai-assistant-ball.edge-left) .settings-button {
-    top: 100%;
-    bottom: auto;
-    margin-bottom: 0;
-    margin-top: 8px;
-}
-
-/* 当悬浮球在右边缘时，设置按钮显示在下方 */
+/* 隐藏所有边缘位置的设置按钮 */
+.ball-container:has(#ai-assistant-ball.edge-bottom) .settings-button,
+.ball-container:has(#ai-assistant-ball.edge-top) .settings-button,
+.ball-container:has(#ai-assistant-ball.edge-left) .settings-button,
 .ball-container:has(#ai-assistant-ball.edge-right) .settings-button {
-    top: 100%;
-    bottom: auto;
-    margin-bottom: 0;
-    margin-top: 8px;
+    opacity: 0;
+    pointer-events: none;
 }
 
-/* 确保置按钮可以接收点击事件 */
+/* 确保设置按钮不可接收点击事件 */
 .settings-button {
-    pointer-events: auto;
+    pointer-events: none;
+    display: none; /* 完全隐藏设置按钮 */
 }
 
 /* 中断消息样式 */

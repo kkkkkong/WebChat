@@ -270,6 +270,38 @@ function createFloatingBall() {
     const iconUrl = chrome.runtime.getURL('icons/ball-icon.gif');
     ball.innerHTML = `<img src="${iconUrl}" width="100" height="100" alt="AI Assistant">`;
 
+    // 图标切换：根据不同边缘状态使用不同图标（左右 -> comeon.gif，底部 -> hello.gif，顶部不隐藏）
+    const originalIconUrl = iconUrl;
+    const sideIconUrl = chrome.runtime.getURL('icons/comeon.gif');
+    const bottomIconUrl = chrome.runtime.getURL('icons/hello.gif');
+    const topIconUrl = chrome.runtime.getURL('icons/wait.gif');
+    const ballImg = ball.querySelector('img');
+
+    function updateBallImage() {
+        if (!ballImg) return;
+
+        // 左/右：使用 comeon.gif
+        if (ball.classList.contains('edge-left') || ball.classList.contains('edge-right')) {
+            ballImg.src = sideIconUrl;
+            return;
+        }
+
+        // 底部：使用 hello.gif
+        if (ball.classList.contains('edge-bottom')) {
+            ballImg.src = bottomIconUrl;
+            return;
+        }
+
+        // 顶部：使用 wait.gif（顶部隐藏时切换为 wait）
+        if (ball.classList.contains('edge-top')) {
+            ballImg.src = topIconUrl;
+            return;
+        }
+
+        // 非边缘：恢复原始图标
+        ballImg.src = originalIconUrl;
+    }
+
     // 创建设置按钮
     const settingsButton = document.createElement('div');
     settingsButton.className = 'settings-button';
@@ -450,6 +482,8 @@ function createFloatingBall() {
         chrome.storage.sync.set({
             ballPosition: position
         });
+        // 更新图标（如果进入/离开边缘状态）
+        try { updateBallImage(); } catch (e) { /* ignore */ }
     }
     
     function handleMouseUp(e) {
@@ -477,7 +511,8 @@ function createFloatingBall() {
 
     // 从存储中加载位置，并确保位置在可视区域内
     chrome.storage.sync.get({
-        ballPosition: { right: 'auto', bottom: 'auto', left: '20px', top: '20px', edge: null }
+        // ballPosition: { right: 'auto', bottom: 'auto', left: '20px', top: '20px', edge: null }
+        ballPosition: { left: 'auto', bottom: 'auto', right: '20px', top: '20px', edge: null }
     }, (items) => {
         // 获取容器和窗口尺寸
         const containerRect = container.getBoundingClientRect();
@@ -539,6 +574,9 @@ function createFloatingBall() {
         if (position.edge) {
             ball.classList.add(`edge-${position.edge}`);
         }
+
+        // 更新图标（加载时可能已经是边缘状态）
+        try { updateBallImage(); } catch (e) { /* ignore */ }
 
         // 保存调整后的位置
         chrome.storage.sync.set({ ballPosition: position });
@@ -603,9 +641,15 @@ function createFloatingBall() {
 
         // 保存更新后的位置和边缘状态
         chrome.storage.sync.set({ ballPosition: position });
+
+        // 更新图标（resize 之后可能需要切换）
+        try { updateBallImage(); } catch (e) { /* ignore */ }
     });
 
     document.body.appendChild(container);
+    // 初始更新图标（确保初始状态正确）
+    try { updateBallImage(); } catch (e) { /* ignore */ }
+
     return ball;
 }
 
