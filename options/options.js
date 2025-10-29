@@ -11,7 +11,7 @@ const API_CONFIGS = {
         modelHelp: 'LMP Cloud API模型ID',
         agentId:"eb2b0d6e-e4b5-437b-98a8-3fd3dcae5386",
         agentVersion:"",
-        sessionId:"7987fda1-5f6e-4105-a53d-2531fb95c706"
+        sessionId:"b28dd679-8d85-4cf5-81af-578750848cad"
     }
 };
 async function createApiConfig(settings) {

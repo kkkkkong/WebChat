@@ -74,6 +74,31 @@
     align-items: center;
 }
 
+/* 对话框头部的设置按钮样式 */
+#ai-assistant-dialog .dialog-settings {
+    position: absolute;
+    right: 12px;
+    top: 8px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: transparent;
+    color: #666;
+    font-size: 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    z-index: 3;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+#ai-assistant-dialog .dialog-settings:hover {
+    background-color: rgba(0,0,0,0.05);
+    color: #333;
+}
+
 #ai-assistant-dialog .chat-container {
     flex: 1;
     overflow-y: auto;

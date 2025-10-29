@@ -176,7 +176,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.error('加载历史记录失败:', error);
             messagesContainer.innerHTML = `
                 <div class="welcome-message">
-                    <p>👋 你好！我是AI助手，可以帮你理解和分析当前网页的内容。</p>
+                    <p>👋 你好！我是电费知识助手，可以帮你回答电价电费相关的内容。</p>
                 </div>
             `;
         }

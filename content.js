@@ -43,6 +43,7 @@ function createDialog() {
         <div class="container">
             <div class="header">
                 <div class="tokens-counter">Tokens: 0</div>
+                <button id="dialogSettingsButton" class="dialog-settings" title="设置" aria-label="设置">⚙</button>
             </div>
             <div id="chat-container" class="chat-container">
                 <div id="messages" class="messages"></div>
@@ -235,6 +236,15 @@ function createDialog() {
     });
 
     document.body.appendChild(dialog);
+
+    // 对话框头部的设置按钮事件（在对话框内打开扩展选项）
+    const dlgSettingsBtn = dialog.querySelector('#dialogSettingsButton');
+    if (dlgSettingsBtn) {
+        dlgSettingsBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            chrome.runtime.sendMessage({ action: 'openOptions' });
+        });
+    }
 
     // 修改点击外部关闭功能
     document.addEventListener('mousedown', async (e) => {
