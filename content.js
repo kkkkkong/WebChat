@@ -332,8 +332,13 @@ function createFloatingBall() {
         chrome.runtime.sendMessage({ action: 'openOptions' });
     });
 
-    // 悬浮球点击事件
+    // 悬浮球点击事件（被拖拽后会被抑制）
     ball.addEventListener('click', () => {
+        if (suppressClick) {
+            // 抑制由拖拽触发的 click
+            suppressClick = false;
+            return;
+        }
         const isVisible = dialog.classList.contains('show');
         if (!isVisible) {
             // 计算对话框的理想位置
@@ -402,6 +407,11 @@ function createFloatingBall() {
     let currentY;
     let initialX;
     let initialY;
+    // 新增：用于抑制拖拽结束后的 click 事件
+    let startClientX = 0;
+    let startClientY = 0;
+    let dragMoved = false;
+    let suppressClick = false;
     
     // 定义事件处理函数
     function handleMouseDown(e) {
@@ -409,6 +419,10 @@ function createFloatingBall() {
         const rect = container.getBoundingClientRect();
         initialX = e.clientX - rect.left;
         initialY = e.clientY - rect.top;
+        // 记录起始位置以判断是否为拖拽
+        startClientX = e.clientX;
+        startClientY = e.clientY;
+        dragMoved = false;
         
         // 添加移动和释放事件监听器
         document.addEventListener('mousemove', handleMouseMove);
@@ -422,6 +436,13 @@ function createFloatingBall() {
         if (!isDragging) return;
         
         e.preventDefault();
+        // 计算当前位置并判断是否超过拖拽阈值
+        const moveDx = Math.abs(e.clientX - startClientX);
+        const moveDy = Math.abs(e.clientY - startClientY);
+        if (!dragMoved && (moveDx > 5 || moveDy > 5)) {
+            dragMoved = true;
+        }
+
         currentX = e.clientX - initialX;
         currentY = e.clientY - initialY;
 
@@ -503,6 +524,12 @@ function createFloatingBall() {
         
         // 重置拖拽状态
         isDragging = false;
+        // 如果在本次拖拽过程中发生过移动，则抑制紧接着的 click 事件
+        if (dragMoved) {
+            suppressClick = true;
+            // 在短时间后恢复 click 功能
+            setTimeout(() => { suppressClick = false; }, 150);
+        }
         console.log('拖拽结束');
     }
     
