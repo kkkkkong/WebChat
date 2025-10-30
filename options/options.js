@@ -368,7 +368,7 @@ function loadOptions() {
         maxTokens: 2048,
         temperature: 0.7,
         enableContext: false,
-        systemPrompt: '你是一个帮助理解网页内容的AI助手。请使用Markdown格式回复。',
+        systemPrompt: '你是一个帮助电费智能问答的AI助手。请使用Markdown格式回复。',
         lmpcloud_apiKey:'test',
         lmpcloud_apiBase:'asdfasd'
     }, (items) => {
@@ -577,7 +577,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         autoHideDialog: true,
         enableContext: true,
         maxContextRounds: 3,
-        systemPrompt: '你是一个帮助理解网页内容的AI助手。请使用Markdown格式回复。' // 默认提示词
+        systemPrompt: '你是一个电费智能问答的AI助手。请使用Markdown格式回复。' // 默认提示词
     }, (items) => {
         autoHideDialog.checked = items.autoHideDialog;
         enableContext.checked = items.enableContext;
@@ -617,7 +617,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         promptTimeout = setTimeout(() => {
             chrome.storage.sync.set({
-                systemPrompt: systemPrompt.value || '你是一个帮助理解网页内容的AI助手。请使用Markdown格式回复。'
+                systemPrompt: systemPrompt.value || '你是一个帮电费智能问答的AI助手。请使用Markdown格式回复。'
             });
         }, 1000);
     });

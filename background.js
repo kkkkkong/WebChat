@@ -181,7 +181,7 @@ async function handleAnswerGeneration(port, tabId, pageContent, question) {
             maxTokens: 2048,
             temperature: 0.7,
             enableContext: false,
-            systemPrompt: '你是一个帮助理解网页内容的AI助手。请使用Markdown格式回复。',
+            systemPrompt: '你是一个电费领域的AI助手。请使用Markdown格式回复。',
             lmpcloud_apiKey:'test',
             lmpcloud_apiBase:'asdfasd',
             agentId:"test",
@@ -220,7 +220,7 @@ async function handleAnswerGeneration(port, tabId, pageContent, question) {
         // 添加当前问题
         messages.push({
             role: "user",
-            content: `基于以下网页内容回答问题：\n\n${pageContent}\n\n问题：${question}`
+            content: `基于以下内容回答问题：\n\n${pageContent}\n\n问题：${question}`
         });
 
         // 构建请求体
@@ -264,7 +264,7 @@ async function handleAnswerGeneration(port, tabId, pageContent, question) {
 
         // 估算输入tokens（简单实现，可以根据需要调整）
         const systemPrompt = settings.systemPrompt;
-        const inputContent = `基于以下网页内容回答问题：\n\n${pageContent}\n\n问题：${question}`;
+        const inputContent = `基于以下内容回答问题：\n\n${pageContent}\n\n问题：${question}`;
         const inputTokens = Math.ceil((systemPrompt.length + inputContent.length) / 4);
 
         // 发送输入tokens数量
