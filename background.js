@@ -231,7 +231,7 @@ async function handleAnswerGeneration(port, tabId, pageContent, question) {
                 agentVersion: "",
                 files: [],
                 sessionId: settings.sessionId,
-                stream: false,
+                stream: true,
                 text: question,
                 metadata: {}
             };
@@ -298,10 +298,10 @@ async function handleAnswerGeneration(port, tabId, pageContent, question) {
                 for (const line of lines) {
                     if (!line.trim()) continue;
 
-                    // if (line.startsWith('data: ')) {
-                    if (true) {
-                        // const data = line.slice(5).trim();
-                        const data = line.trim();
+                     if (line.startsWith('data:')) {
+//                    if (true) {
+                         const data = line.slice(5).trim();
+//                        const data = line.trim();
 
                         if (data === '[DONE]') {
                             continue;
@@ -315,10 +315,15 @@ async function handleAnswerGeneration(port, tabId, pageContent, question) {
                                 content = parsed.message?.content || '';
                             } else if (settings.apiType === 'lmpcloud') {
                                 // 处理LMP Cloud API的响应格式
-                                if (parsed.code === "000000" && parsed.success && parsed.data?.answer) {
-                                    content = parsed.data.answer;
+//                                处理流式输出
+                                if(parsed.answer){
+//                                if (parsed.code === "000000" && parsed.success && parsed.data?.answer) {
+//                                    console.log("message.code",code)
+//                                    content = parsed.data.answer;
+                                    console.log("message.parsed.answer",parsed.answer)
+                                    content = parsed.answer;
                                     // 检查是否结束
-                                    if (parsed.data.isEnd) {
+                                    if (parsed.isEnd) {
                                         // 如果已结束，可以在这里处理
                                     }
                                 }
